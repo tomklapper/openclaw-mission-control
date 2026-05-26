@@ -7214,6 +7214,151 @@
         // Check auth on page load
         checkAuth();
     </script>
+    <script>
+        // German UI localization layer for Thomas' Mission Control instance.
+        // Keeps upstream dashboard logic intact while translating static and dynamic UI copy.
+        (function localizeMissionControlToGerman() {
+            const textMap = new Map(Object.entries({
+                'Mission Control': 'Mission Control',
+                'Task & Project Management Dashboard': 'Aufgaben- und Projekt-Dashboard',
+                'Connect your GitHub account to access the dashboard.': 'Verbinde dein GitHub-Konto, um auf das Dashboard zuzugreifen.',
+                'Create token on GitHub →': 'Token auf GitHub erstellen →',
+                'Connect with GitHub': 'Mit GitHub verbinden',
+                'Connect GitHub': 'GitHub verbinden',
+                'Tasks': 'Aufgaben',
+                'Save & Commit': 'Speichern & Committen',
+                'Permanent': 'Dauerhaft',
+                'Backlog': 'Backlog',
+                'In Progress': 'In Bearbeitung',
+                'Review': 'Prüfung',
+                'Done': 'Erledigt',
+                '📦 Archive All': '📦 Alle archivieren',
+                '🔐 Connect to GitHub': '🔐 Mit GitHub verbinden',
+                'Connect your GitHub account to create, edit, and save tasks directly to the repository.': 'Verbinde dein GitHub-Konto, um Aufgaben direkt im Repository zu erstellen, zu bearbeiten und zu speichern.',
+                'GitHub Personal Access Token': 'GitHub Personal Access Token',
+                '🔒 Your token is stored locally and never sent anywhere except GitHub.': '🔒 Dein Token wird lokal gespeichert und nur an GitHub gesendet.',
+                'Connected as': 'Verbunden als',
+                'Cancel': 'Abbrechen',
+                'Connect': 'Verbinden',
+                '⚙️ Settings': '⚙️ Einstellungen',
+                'Connect to your OpenClaw Gateway for live cron management.': 'Verbinde dein OpenClaw Gateway für Live-Cron-Verwaltung.',
+                'Save': 'Speichern',
+                'Add New Project': 'Neues Projekt hinzufügen',
+                '+ Add Project': '+ Projekt hinzufügen',
+                '💾 Save Changes to GitHub': '💾 Änderungen auf GitHub speichern',
+                'Edit Task': 'Aufgabe bearbeiten',
+                'Description': 'Beschreibung',
+                'Status': 'Status',
+                'Priority': 'Priorität',
+                '+ Add': '+ Hinzufügen',
+                'Subtasks': 'Teilaufgaben',
+                'Delete': 'Löschen',
+                '⏰ As Cron': '⏰ Als Cron',
+                'Save Task': 'Aufgabe speichern',
+                '✓ Done': '✓ Erledigt',
+                '↩ Backlog': '↩ Backlog',
+                '📦 Archive': '📦 Archivieren',
+                '📤 Unarchive': '📤 Wiederherstellen',
+                'Loading collaborators...': 'Lade Mitwirkende...',
+                'Auto-Save': 'Automatisches Speichern',
+                'Save inline edits': 'Inline-Änderungen speichern'
+            }));
+
+            const attrMap = new Map(Object.entries({
+                'Search tasks...': 'Aufgaben suchen...',
+                'Clear search': 'Suche leeren',
+                'Settings': 'Einstellungen',
+                'Schedule a task': 'Aufgabe planen',
+                'Add new template': 'Neue Vorlage hinzufügen',
+                'Add new task': 'Neue Aufgabe hinzufügen',
+                'Archive all done tasks': 'Alle erledigten Aufgaben archivieren',
+                'Task title': 'Aufgabentitel',
+                'Task description': 'Aufgabenbeschreibung',
+                'Add tag...': 'Tag hinzufügen...',
+                'Add new subtask...': 'Neue Teilaufgabe hinzufügen...',
+                'Add a comment...': 'Kommentar hinzufügen...',
+                'Convert to recurring cron job': 'In wiederkehrenden Cron-Job umwandeln',
+                'Mark as Done': 'Als erledigt markieren',
+                'Move to Backlog': 'In Backlog verschieben',
+                'Archive this task': 'Diese Aufgabe archivieren',
+                'Restore from archive': 'Aus Archiv wiederherstellen'
+            }));
+
+            const containsMap = [
+                ['Loading tasks from GitHub', 'Lade Aufgaben von GitHub'],
+                ['Loaded', 'Geladen'],
+                ['tasks from GitHub', 'Aufgaben von GitHub'],
+                ['Could not load from GitHub, using cached data', 'Konnte nicht von GitHub laden, nutze zwischengespeicherte Daten'],
+                ['Saved to GitHub', 'Auf GitHub gespeichert'],
+                ['Please enter a token', 'Bitte Token eingeben'],
+                ['Invalid token. Please check and try again.', 'Ungültiger Token. Bitte prüfen und erneut versuchen.'],
+                ['Connection error. Please try again.', 'Verbindungsfehler. Bitte erneut versuchen.']
+            ];
+
+            function translateTextValue(value) {
+                const trimmed = value.trim();
+                if (!trimmed) return value;
+                let translated = textMap.get(trimmed) || trimmed;
+                for (const [source, target] of containsMap) {
+                    translated = translated.replace(source, target);
+                }
+                if (translated === trimmed) return value;
+                return value.replace(trimmed, translated);
+            }
+
+            function translateElement(element) {
+                if (!element || ['SCRIPT', 'STYLE', 'CODE', 'PRE'].includes(element.tagName)) return;
+                for (const attr of ['placeholder', 'title', 'aria-label', 'value']) {
+                    if (element.hasAttribute && element.hasAttribute(attr)) {
+                        const current = element.getAttribute(attr);
+                        const translated = attrMap.get(current) || textMap.get(current);
+                        if (translated) element.setAttribute(attr, translated);
+                    }
+                }
+                if (element.tagName === 'OPTION') {
+                    element.textContent = translateTextValue(element.textContent);
+                }
+            }
+
+            function translateTree(root = document.body) {
+                document.documentElement.lang = 'de';
+                document.title = 'Mission Control - Aufgaben';
+                root.querySelectorAll?.('*').forEach(translateElement);
+
+                const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+                    acceptNode(node) {
+                        const parent = node.parentElement;
+                        if (!parent || ['SCRIPT', 'STYLE', 'CODE', 'PRE'].includes(parent.tagName)) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                });
+                const textNodes = [];
+                while (walker.nextNode()) textNodes.push(walker.currentNode);
+                for (const node of textNodes) {
+                    node.nodeValue = translateTextValue(node.nodeValue);
+                }
+            }
+
+            translateTree();
+            new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            node.nodeValue = translateTextValue(node.nodeValue);
+                        } else if (node.nodeType === Node.ELEMENT_NODE) {
+                            translateElement(node);
+                            translateTree(node);
+                        }
+                    }
+                    if (mutation.type === 'characterData') {
+                        mutation.target.nodeValue = translateTextValue(mutation.target.nodeValue);
+                    }
+                }
+            }).observe(document.body, { childList: true, subtree: true, characterData: true });
+        })();
+    </script>
 </body>
 </html>
 <!-- test Wed Jan 28 19:46:49 CET 2026 -->
